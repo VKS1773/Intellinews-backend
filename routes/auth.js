@@ -15,6 +15,8 @@ router.post(
     body("password", "password must be 5 character").isLength({ min: 5 }),
   ],
   async (req, res) => {
+    let success = false;
+
     //if there is any error return error with bad request.
     const result = validationResult(req);
     if (!result.isEmpty()) {
@@ -25,9 +27,10 @@ router.post(
     try {
       let user = await User.findOne({ email: req.body.email });
       if (user) {
+        success = false;
         return res
           .status(400)
-          .json({ error: "Sorry user with this email already exist" });
+          .json({ success, error: "Sorry user with this email already exist" });
       }
       const salt = await bcrypt.genSalt(10);
       const secpass = await bcrypt.hash(req.body.password, salt);
@@ -43,7 +46,7 @@ router.post(
         },
       };
       const authtoken = jwt.sign(data, JWT_SECRET);
-      res.json({ authtoken: authtoken });
+      res.json({ success: "true", authtoken: authtoken });
     } catch (error) {
       console.log(error);
       res.status(500).send("some error occured");
@@ -62,7 +65,7 @@ router.post(
     //if there is any error return error with bad request.
     const result = validationResult(req);
     if (!result.isEmpty()) {
-      return res.status(400).json({ errors: result.array() });
+      return res.status(400).json({ sucess: "falase", errors: result.array() });
     }
 
     try {
@@ -75,9 +78,11 @@ router.post(
 
       const passwordCompare = bcrypt.compare(req.body.password, user.password);
       if (!passwordCompare) {
-        return res
-          .status(400)
-          .json({ error: "Please try login with currect credentials" });
+        success = false;
+        return res.status(400).json({
+          success,
+          error: "Please try login with currect credentials",
+        });
       }
       const data = {
         user: {
@@ -85,7 +90,7 @@ router.post(
         },
       };
       const authtoken = jwt.sign(data, JWT_SECRET);
-      res.json({ authtoken: authtoken });
+      res.json({ success: "true", authtoken: authtoken });
     } catch (error) {
       console.log(error);
       res.status(500).send("some error occured");
